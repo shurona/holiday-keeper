@@ -63,7 +63,8 @@ public class HolidayController {
 
         // 페이지 정보 조회
         Page<Holiday> holiDayList = holidayService.findHollyDayList(pageRequest,
-            new HolidaySearchCondition(condition.year(), country));
+            new HolidaySearchCondition(condition.year(), country,
+                condition.from(), condition.to(), condition.type()));
 
         return ApiResponse.success(
             PageResponse.from(holiDayList.map(HolidayResponseDto::of))

@@ -38,6 +38,21 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
             builder.and(holiday.countryCode.id.eq(searchCondition.country().getId()));
         }
 
+        if (searchCondition.from() != null) {
+            builder.and(holiday.date.goe(searchCondition.from()));
+
+        }
+
+        if (searchCondition.to() != null) {
+            builder.and(holiday.date.loe(searchCondition.to()));
+        }
+
+        if (searchCondition.type() != null) {
+            // 타입에 대소문자를 구분하지 않는다.
+            String typeToSearch = searchCondition.type().toLowerCase();
+            builder.and(holiday.types.any().toLowerCase().eq(typeToSearch));
+        }
+
         // 먼저 id 목록을 먼저 불러온다.
         List<Long> holidayIds = query.select(holiday.id)
             .from(holiday)

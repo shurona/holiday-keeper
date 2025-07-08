@@ -5,9 +5,12 @@ import static com.shurona.holiday.common.exception.HolidayErrorCode.INVALID_REFR
 
 import com.shurona.holiday.common.exception.HolidayException;
 import com.shurona.holiday.common.response.ApiResponse;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -40,6 +43,19 @@ public class GlobalRestControllerAdvice {
         }
 
         return ApiResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * 입력값이 잘 못 들어온 경우 처리하는 에러핸들링
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ApiResponse<Void> handleMethodArgumentNotValidException(
+        MethodArgumentNotValidException ex) {
+        List<String> wrongKeys = new ArrayList<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            wrongKeys.add(error.getField()));
+
+        return ApiResponse.error(HttpStatus.BAD_REQUEST, "입력값 검증에 실패했습니다. " + wrongKeys);
     }
 
     /**

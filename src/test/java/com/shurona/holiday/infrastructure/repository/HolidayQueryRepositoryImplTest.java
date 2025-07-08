@@ -1,5 +1,6 @@
 package com.shurona.holiday.infrastructure.repository;
 
+import static com.shurona.holiday.domain.HolidaySortType.DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shurona.holiday.config.JpaTestConfig;
@@ -68,12 +69,17 @@ class HolidayQueryRepositoryImplTest {
             LocalDate.of(2024, 1, 15), "신정", "Martin Luther King, Jr. Day", us,
             true, true, null, List.of("Public"), List.of());
 
+        Holiday usHoliday4 = Holiday.createHoliday(
+            LocalDate.of(2024, 5, 8), "Truman Day", "Truman Day", us,
+            false, false, null, List.of("School", "Authorities"), List.of("US-MO"));
+
         em.persist(koreaHoliday1);
         em.persist(koreaHoliday2);
         em.persist(koreaHoliday3);
         em.persist(usHoliday1);
         em.persist(usHoliday2);
         em.persist(usHoliday3);
+        em.persist(usHoliday4);
 
         // entity manager 초기화
         em.flush();
@@ -87,8 +93,10 @@ class HolidayQueryRepositoryImplTest {
         @Test
         void 연도_국가_휴일_검색() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(2023, korea);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                2023, korea, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
@@ -103,8 +111,10 @@ class HolidayQueryRepositoryImplTest {
         @Test
         void 연도로만_휴일검색() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(2023, null);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                2023, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
@@ -119,8 +129,11 @@ class HolidayQueryRepositoryImplTest {
         @Test
         void 국가로만_휴일검색() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(null, korea);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, korea, null, null, null);
+
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
@@ -135,22 +148,26 @@ class HolidayQueryRepositoryImplTest {
         @Test
         void 조건없이_휴일검색() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(null, null);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
                 condition);
 
             // then
-            assertThat(result.getContent()).hasSize(6);
+            assertThat(result.getContent()).hasSize(7);
         }
 
         @Test
         void 조건없이_페이징() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(null, null);
-            Pageable pageable = PageRequest.of(0, 2, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 2,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
@@ -158,23 +175,76 @@ class HolidayQueryRepositoryImplTest {
 
             // then
             assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(6);
-            assertThat(result.getTotalPages()).isEqualTo(3);
+            assertThat(result.getTotalElements()).isEqualTo(7);
+            assertThat(result.getTotalPages()).isEqualTo(4);
         }
 
         @Test
         void 조건없이_내림차순() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(null, null);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").descending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).descending());
 
             // when
             Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
                 condition);
 
             // then
-            assertThat(result.getContent()).hasSize(6);
-            assertThat(result.getContent().get(0).getDate()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(result.getContent()).hasSize(7);
+            assertThat(result.getContent().get(0).getDate()).isEqualTo(LocalDate.of(2024, 5, 8));
+        }
+
+        @Test
+        void 날짜_시작_조건_검색() {
+            // given
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, LocalDate.parse("2023-01-02"), null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
+
+            // when
+            Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
+                condition);
+
+            // then
+            assertThat(result.getContent()).hasSize(5);
+            assertThat(result.getContent().get(0).getDate()).isEqualTo(LocalDate.of(2023, 3, 1));
+        }
+
+        @Test
+        void 날짜_끝_조건_검색() {
+            // given
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, LocalDate.parse("2023-01-02"), LocalDate.parse("2024-01-01"), null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).descending());
+
+            // when
+            Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
+                condition);
+
+            // then
+            assertThat(result.getContent()).hasSize(3);
+            assertThat(result.getContent().get(0).getDate()).isEqualTo(LocalDate.of(2024, 1, 1));
+        }
+
+        @Test
+        void 공휴일_타입_검색() {
+            // given
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, null, null, "School");
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
+
+            // when
+            Page<Holiday> result = holidayQueryRepository.findAllHolidayByCondition(pageable,
+                condition);
+
+            // then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getDate()).isEqualTo(LocalDate.of(2024, 5, 8));
         }
     }
 
@@ -185,9 +255,12 @@ class HolidayQueryRepositoryImplTest {
         @Test
         public void 연도_국가_삭제() {
             // given
-            HolidaySearchCondition conditionDelete = new HolidaySearchCondition(2023, korea);
-            HolidaySearchCondition conditionExist = new HolidaySearchCondition(2024, korea);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition conditionDelete = new HolidaySearchCondition(
+                2023, korea, null, null, null);
+            HolidaySearchCondition conditionExist = new HolidaySearchCondition(
+                2024, korea, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             long deleteCt = holidayQueryRepository.deleteAllByYearAndCountry(2023, korea);
@@ -205,9 +278,12 @@ class HolidayQueryRepositoryImplTest {
         @Test
         public void 부분_삭제() {
             // given
-            HolidaySearchCondition conditionDelete = new HolidaySearchCondition(2023, korea);
-            HolidaySearchCondition conditionExist = new HolidaySearchCondition(null, us);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition conditionDelete = new HolidaySearchCondition(
+                2023, korea, null, null, null);
+            HolidaySearchCondition conditionExist = new HolidaySearchCondition(
+                null, us, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             long delete2023Ct = holidayQueryRepository.deleteAllByYearAndCountry(2023, null);
@@ -220,7 +296,7 @@ class HolidayQueryRepositoryImplTest {
 
             // then
             assertThat(delete2023Ct).isEqualTo(4);
-            assertThat(deleteUsCt).isEqualTo(1);
+            assertThat(deleteUsCt).isEqualTo(2);
             assertThat(deleteQueryCheck.toList().size()).isEqualTo(0);
             assertThat(existQueryCheck.toList().size()).isEqualTo(0);
         }
@@ -228,8 +304,10 @@ class HolidayQueryRepositoryImplTest {
         @Test
         public void 전체_삭제() {
             // given
-            HolidaySearchCondition condition = new HolidaySearchCondition(null, null);
-            Pageable pageable = PageRequest.of(0, 10, Sort.by("date").ascending());
+            HolidaySearchCondition condition = new HolidaySearchCondition(
+                null, null, null, null, null);
+            Pageable pageable = PageRequest.of(0, 10,
+                Sort.by(DATE.toString()).ascending());
 
             // when
             long ct = holidayQueryRepository.deleteAllByYearAndCountry(null, null);
@@ -237,7 +315,7 @@ class HolidayQueryRepositoryImplTest {
                 pageable, condition);
 
             // then
-            assertThat(ct).isEqualTo(6);
+            assertThat(ct).isEqualTo(7);
             assertThat(holidays.toList().size()).isEqualTo(0);
         }
     }

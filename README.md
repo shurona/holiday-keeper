@@ -2,15 +2,154 @@
 
 최근 5 년(2020 ~ 2025) 의 전 세계 공휴일 데이터를 저장·조회·관리하는 Mini Service
 
-# ER 다이어그램
+# Api 명세서
 
-# 의사 선택
+## 1. 휴일 목록 조회
 
-Countries와 types를 ElementCollection과 복합 키 중에서 ElementCollection을 사용한 이유   
-이것입니다.
+- 엔드포인트: `/api/v1/holidays`
+- 메소드: `GET`
+- 설명: 연도와 국가 코드를 기준으로 휴일 목록을 조회
+- 페이징 파라미터:
+    - `size` (기본값: 10, 최대: 100): 페이지 크기
+    - `page` (기본값: 0): 페이지 번호
+    - `sort` (기본값: DATE): 정렬 기준 (DATE, NAME, COUNTRY)
+    - `direction` (기본값: ASC): 정렬 방향 (ASC, DESC)
+- 검색 파라미터
+    - `year`: 검색 연도
+    - `code`: 국가 코드
+    - `from`: 시작 날짜
+    - `to`: 끝 날짜
+    - `type`: 공휴일 타입
+- 응답 예시:
+  ```json
+  {
+    "status": 200,
+    "message": "Success",
+    "data": {
+        "content": [
+            {
+                "id": 8188,
+                "date": "2025-01-01",
+                "localName": "새해",
+                "name": "New Year's Day",
+                "code": "KR",
+                "fixed": false,
+                "global": true,
+                "launchYear": null,
+                "types": [
+                    "Public"
+                ],
+                "counties": []
+            },
+            {
+                "id": 8189,
+                "date": "2025-01-28",
+                "localName": "설날",
+                "name": "Lunar New Year",
+                "code": "KR",
+                "fixed": false,
+                "global": true,
+                "launchYear": null,
+                "types": [
+                    "Public"
+                ],
+                "counties": []
+            }
+        ],
+        "page": 0,
+        "size": 2,
+        "totalElements": 15,
+        "totalPages": 8
+    }
+  }
 
-- 구현이 단순: 별도의 엔티티 클래스를 만들 필요 없이, 컬렉션(Set, List) 필드만 선언하면 됩니다.
-- 삭제 및 갱신이 쉬움: 값 타입 컬렉션은 부모 엔티티(Holiday)가 삭제되면 관련 컬렉션 데이터도 자동으로 삭제됩니다.
-  또한, 컬렉션 값이 변경될 때마다 JPA는 해당 holiday의 기존 컬렉션 데이터를 모두 삭제하고, 새로 삽입합니다.
-- 조회도 간편: Holiday 엔티티를 조회하면 types 컬렉션도 함께 조회할 수 있습니다.
-  타입 기준 조회가 필요할 때는 JPQL이나 네이티브 쿼리로 쉽게 처리할 수 있습니다.# holiday-keeper
+  ```
+
+## 2. 휴일 목록 갱신
+
+- 엔드포인트: `/api/v1/holidays/refresh`
+- 메소드: `POST`
+- 설명: 연도와 국가 코드를 기준으로 휴일 목록을 갱신
+- 요청 본문 예시
+
+```json
+{
+  "year": 2023,
+  "code": "KR"
+}
+```
+
+- 응답 예시
+
+```json
+{
+  "status": 200,
+  "message": "Success",
+  "data": {
+    "content": [
+      {
+        "id": 8188,
+        "date": "2025-01-01",
+        "localName": "새해",
+        "name": "New Year's Day",
+        "code": "KR",
+        "fixed": false,
+        "global": true,
+        "launchYear": null,
+        "types": [
+          "Public"
+        ],
+        "counties": []
+      },
+      {
+        "id": 8189,
+        "date": "2025-01-28",
+        "localName": "설날",
+        "name": "Lunar New Year",
+        "code": "KR",
+        "fixed": false,
+        "global": true,
+        "launchYear": null,
+        "types": [
+          "Public"
+        ],
+        "counties": []
+      }
+    ],
+    "page": 0,
+    "size": 2,
+    "totalElements": 15,
+    "totalPages": 8
+  }
+}
+```
+
+## 3. 휴일 목록 삭제
+
+- 엔드포인트: `/api/v1/holidays`
+- 메소드: `DELETE`
+- 설명: 연도와 국가 코드를 기준으로 휴일 목록을 삭제
+- 요청 본문 예시
+
+```json
+{
+  "year": 2025,
+  "code": "KR"
+}
+```
+
+응답 예시
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "성공",
+  "data": null
+}
+```
+
+# 테스트 성공 스크린 샷
+
+# Swagger 링크
+
+http://localhost:8080/api-docs

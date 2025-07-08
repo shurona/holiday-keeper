@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: holiday-keeper
+  datasource:
+    url: jdbc:h2:mem:db-holiday
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      #      ddl-auto: create-drop
+      default_batch_fetch_size: 100
+#    properties:
+#      hibernate:
+#        show_sql: true # sql
+#        format_sql: true # SQL
+#        highlight_sql: true # SQL
+
+datenager:
+  url: https://date.nager.at/api/v3/

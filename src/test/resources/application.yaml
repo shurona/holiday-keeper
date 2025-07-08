@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: test
+  application:
+    name: holiday-keeper
+  datasource:
+    url: jdbc:h2:mem:db-holiday
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+datenager:
+  url: https://date.nager.at/api/v3/

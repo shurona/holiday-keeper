@@ -20,3 +20,7 @@ spring:
 
 datenager:
   url: https://date.nager.at/api/v3/
+
+springdoc:
+  swagger-ui:
+    path: /api-docs

@@ -5,10 +5,10 @@ import static com.shurona.holiday.domain.model.QHoliday.holiday;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.shurona.holiday.domain.HolidaySearchCondition;
+import com.shurona.holiday.domain.HolidaySortType;
 import com.shurona.holiday.domain.model.Country;
 import com.shurona.holiday.domain.model.Holiday;
 import java.util.List;
@@ -116,12 +116,18 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
 
         return pageable.getSort().map(order -> {
             Order direction = order.getDirection().isAscending() ? Order.ASC : Order.DESC;
+            HolidaySortType sortType = HolidaySortType.valueOf(order.getProperty());
 
-            PathBuilder<Holiday> holidayPath = new PathBuilder<>(Holiday.class, "holiday");
-
-            return new OrderSpecifier(direction,
-                holidayPath.get(order.getProperty()));
-
+            // sortType enum에 따른 정렬 처리
+            switch (sortType) {
+                case NAME:
+                    return new OrderSpecifier(direction, holiday.name);
+                case COUNTRY:
+                    return new OrderSpecifier(direction, holiday.countryCode);
+                case DATE:
+                default:
+                    return new OrderSpecifier(direction, holiday.date);
+            }
         }).toList();
     }
 }

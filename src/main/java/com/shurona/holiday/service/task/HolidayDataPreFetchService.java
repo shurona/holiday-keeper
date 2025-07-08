@@ -1,4 +1,4 @@
-package com.shurona.holiday.service;
+package com.shurona.holiday.service.task;
 
 import com.shurona.holiday.common.mapper.HolidayMapper;
 import com.shurona.holiday.domain.model.Country;
@@ -8,6 +8,7 @@ import com.shurona.holiday.infrastructure.client.datenager.dto.CountryCodeRespon
 import com.shurona.holiday.infrastructure.client.datenager.dto.PublicHolidayResponseDto;
 import com.shurona.holiday.infrastructure.repository.CountryJpaRepository;
 import com.shurona.holiday.infrastructure.repository.HolidayJpaRepository;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,9 @@ public class HolidayDataPreFetchService {
     // mapper
     private final HolidayMapper holidayMapper;
 
+    // taskScheduler
+    private final TaskScheduler taskScheduler;
+
     @EventListener(ApplicationReadyEvent.class)
     public void preFetchHolidayData() {
 
@@ -47,28 +52,37 @@ public class HolidayDataPreFetchService {
         List<Country> countryList = findCountryList();
         log.info("5년간의 국가 공휴일 데이터를 갖고 온다.");
         for (Country country : countryList) {
-            int year = LocalDate.now().getYear();
-            // 5년 간 데이터를 갖고 온다.
-            for (int i = 0; i < PRE_FETCH_YEAR_CT; i++) {
-                boolean success = false;
-                int retryCount = 1;
-                while (!success && retryCount <= MAX_RETRY) {
-                    try {
-                        success = saveHolidayDataByYear(year - i, country);
-                    } catch (Exception e) {
-                        retryCount++;
-                        log.error("Year {} - 처리 중 오류 발생 (시도 {}/{}): {}",
-                            year - i, retryCount, MAX_RETRY, e.getMessage());
+            Runnable task = () -> fetchMultiYearHolidays(country);
+            taskScheduler.schedule(task, Instant.now().plusSeconds(0));
+        }
+    }
 
-                        if (retryCount > MAX_RETRY) {
-                            log.error("Year {} - 최대 재시도 횟수 초과, 처리 실패", year - i);
-                        }
+    /**
+     * 정해진 연수의 공휴일 데이터를 갖고 오는 메소드
+     */
+    @Transactional
+    private void fetchMultiYearHolidays(Country country) {
+        int year = LocalDate.now().getYear();
+        // 정해진 연수의(5년) 공휴일 데이터를 갖고 온다.
+        for (int i = 0; i < PRE_FETCH_YEAR_CT; i++) {
+            boolean success = false;
+            int retryCount = 1;
+            // 성공하거나 MAX_RETRY를 초과할 때 까지 반복하낟.
+            while (!success && retryCount <= MAX_RETRY) {
+                try {
+                    success = saveHolidayDataByYear(year - i, country);
+                } catch (Exception e) {
+                    retryCount++;
+                    log.error("Year {} - 처리 중 오류 발생 (시도 {}/{}): {}",
+                        year - i, retryCount, MAX_RETRY, e.getMessage());
+
+                    if (retryCount > MAX_RETRY) {
+                        log.error("Year {} - 최대 재시도 횟수 초과, 처리 실패", year - i);
                     }
                 }
             }
-            log.info("Country {} - 공휴일 데이터 갖고 오기 성공", country.getCode());
         }
-        log.info("모든 공휴일 페치 성공");
+        log.info("Country {} - 공휴일 데이터 갖고 오기 성공", country.getCode());
     }
 
 
@@ -88,6 +102,7 @@ public class HolidayDataPreFetchService {
         List<PublicHolidayResponseDto> publicHolidays = dateNagerApiClient.findPublicHolidays(
             year, country.getCode());
 
+        // 변환 후 저장
         List<Holiday> holidays = publicHolidays.stream()
             .map(publicHoliday
                 -> holidayMapper.publicHolidayResponseToHoliday(publicHoliday, country))

@@ -149,6 +149,8 @@
 ```
 
 # 테스트 성공 스크린 샷
+<img width="1423" alt="image" src="https://github.com/user-attachments/assets/cbb4fa6b-eb8a-4203-9ced-29b61b91c386" />
+
 
 # Swagger 링크
 

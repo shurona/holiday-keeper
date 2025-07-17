@@ -16,6 +16,7 @@ import com.shurona.holiday.domain.model.Holiday;
 import com.shurona.holiday.service.CountryService;
 import com.shurona.holiday.service.HolidayService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,29 @@ public class HolidayController {
 
         return ApiResponse.success(
             PageResponse.from(holiDayList.map(HolidayResponseDto::of))
+        );
+    }
+
+    @Operation(
+        summary = "평일 날짜 계산",
+        description = "휴일과 주말을 제외한 날짜를 계산합니다."
+    )
+    @GetMapping("/workings")
+    public ApiResponse<?> findWorkingDayCounts(
+        @RequestParam(value = "from") LocalDate from,
+        @RequestParam(value = "to") LocalDate to,
+        @RequestParam(value = "code") String code
+    ) {
+        Country country = findCountryByCode(code);
+        if (country == null) {
+            throw new HolidayException(HolidayErrorCode.COUNTRY_INVALID_INPUT);
+        }
+
+        int workingCt = holidayService.findWorkingDayBetweenFromToByCountry(
+            from, to, country);
+
+        return ApiResponse.success(
+            workingCt
         );
     }
 

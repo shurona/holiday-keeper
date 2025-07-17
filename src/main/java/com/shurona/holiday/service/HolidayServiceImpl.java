@@ -8,6 +8,8 @@ import com.shurona.holiday.domain.model.Holiday;
 import com.shurona.holiday.infrastructure.client.datenager.DateNagerApiClient;
 import com.shurona.holiday.infrastructure.repository.HolidayJpaRepository;
 import com.shurona.holiday.infrastructure.repository.HolidayQueryRepository;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,7 @@ public class HolidayServiceImpl implements HolidayService {
     @Transactional
     @Override
     public List<Holiday> upsertHoliday(Integer year, Country country) {
-    
+
         List<Holiday> holidayList = holidayQueryRepository.findAllHolidayByYearAndCountry(
             year, country);
 
@@ -94,6 +96,24 @@ public class HolidayServiceImpl implements HolidayService {
         return holidayQueryRepository.deleteAllByYearAndCountry(year, country);
     }
 
+    @Override
+    public int findWorkingDayBetweenFromToByCountry(LocalDate from, LocalDate to, Country country) {
+
+        List<LocalDate> localDates = holidayQueryRepository.findLocalDateListBetweenFromToByCountry(
+            from, to, country);
+
+        int workingDateCt = 0;
+        LocalDate date = from;
+        while (!date.isAfter(to)) {
+            if (isWorkingDay(date, localDates)) {
+                workingDateCt += 1;
+            }
+            date = date.plusDays(1);
+        }
+
+        return workingDateCt;
+    }
+
     // 휴일 목록을 키-값 맵으로 변환
     private Map<HolidayKey, Holiday> createHolidayKeyMap(List<Holiday> holidays) {
         return holidays.stream()
@@ -108,4 +128,12 @@ public class HolidayServiceImpl implements HolidayService {
     private void updateHolidayFields(Holiday existingHoliday, Holiday newHoliday) {
         existingHoliday.updateNonKeyFields(newHoliday);
     }
+
+    // 평일인지 확인 해본다.
+    private boolean isWorkingDay(LocalDate localDate, List<LocalDate> localDates) {
+        DayOfWeek dayOfWeek = DayOfWeek.from(localDate);
+        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY
+            && !localDates.contains(localDate);
+    }
+
 }

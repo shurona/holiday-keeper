@@ -5,12 +5,15 @@ import static com.shurona.holiday.domain.model.QHoliday.holiday;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.shurona.holiday.domain.HolidaySearchCondition;
 import com.shurona.holiday.domain.HolidaySortType;
 import com.shurona.holiday.domain.model.Country;
 import com.shurona.holiday.domain.model.Holiday;
+import com.shurona.holiday.infrastructure.repository.dto.HolidayDateDao;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -118,6 +121,36 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
         return query.delete(holiday)
             .where(builder)
             .execute();
+    }
+
+    @Override
+    public List<LocalDate> findLocalDateListBetweenFromToByCountry(
+        LocalDate from, LocalDate to, Country country) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (from != null) {
+            builder.and(holiday.date.goe(from));
+
+        }
+
+        if (to != null) {
+            builder.and(holiday.date.loe(to));
+        }
+
+        if (country != null) {
+            builder.and(holiday.countryCode.id.eq(country.getId()));
+        }
+
+        return query.select(
+                Projections.constructor(HolidayDateDao.class,
+                    holiday.date
+                )
+            )
+            .from(holiday)
+            .orderBy(new OrderSpecifier<>(Order.ASC, holiday.date))
+            .where(builder)
+            .fetch().stream().map(HolidayDateDao::date).toList();
     }
 
     /**

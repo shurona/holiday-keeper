@@ -1,15 +1,19 @@
 package com.shurona.holiday.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import com.shurona.holiday.domain.HolidayKey;
 import com.shurona.holiday.domain.model.Country;
 import com.shurona.holiday.domain.model.Holiday;
+import com.shurona.holiday.infrastructure.repository.HolidayQueryRepository;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -17,6 +21,12 @@ public class HolidayServiceMockTest {
 
 
     private Holiday koreaHoliday;
+
+    @Mock
+    private HolidayQueryRepository holidayQueryRepository;
+
+    @InjectMocks
+    private HolidayServiceImpl holidayService;
 
 
     private Country korea;
@@ -133,4 +143,27 @@ public class HolidayServiceMockTest {
         assertThat(baseKey.equals(countiesKey)).isFalse();
     }
 
+    @Test
+    public void 평일_카운트() {
+        // given
+        LocalDate from = LocalDate.of(2023, 1, 1); // 일요일
+        LocalDate to = LocalDate.of(2023, 1, 7);   // 토요일
+        Country korea = Country.createCountry("KR", "Korea");
+
+        // 공휴일 Mock 데이터 설정
+        List<LocalDate> holidays = List.of(
+            LocalDate.of(2023, 1, 2), // 월요일,
+            LocalDate.of(2023, 1, 3) // 화요일
+        );
+
+        // HolidayQueryRepository가 공휴일 목록을 반환하도록 Mock 설정
+        when(holidayQueryRepository.findLocalDateListBetweenFromToByCountry(from, to, korea))
+            .thenReturn(holidays);
+
+        // when
+        int workingDays = holidayService.findWorkingDayBetweenFromToByCountry(from, to, korea);
+
+        // then
+        assertThat(workingDays).isEqualTo(3); // 화, 수, 목, 금 (공휴일 제외)
+    }
 }
